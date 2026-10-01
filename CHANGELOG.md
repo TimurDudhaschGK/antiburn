@@ -20,6 +20,26 @@ CI changes, and documentation that no user acts on stay out — see
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-10-01
+
+This is the first desktop release from the TimurDudhaschGK fork. Packages are
+available for Windows and Linux on x64 and ARM64.
+
+### Fixed
+
+- Windows startup registration no longer rewrites an unchanged command on every
+  launch. Disabling startup in Windows Settings or Task Manager stays disabled
+  through launches and updates. Re-enable it in Windows Settings → Apps → Startup.
+
+### Changed
+
+- Installation, remote-helper downloads, and application updates use this fork’s
+  own releases. Updater packages use this fork’s signing key. Existing upstream
+  installations need a manual fork install to switch to these updates.
+- Windows installers are unsigned and can trigger a SmartScreen warning.
+- Antigravity 2.0 IDE and `agy` credential refresh is not configured in this fork.
+  Local session analysis remains available.
+
 ### Added
 
 - Native Windows 11 ARM64 builds. The PowerShell installer selects the ARM64

@@ -83,7 +83,7 @@ dependencies = [
 
 [[package]]
 name = "antiburn"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "antiburn-anchored-window",
  "antiburn-hud",
@@ -224,7 +224,7 @@ dependencies = [
 
 [[package]]
 name = "antiburn-remote"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "antiburn-local",
  "anyhow",
