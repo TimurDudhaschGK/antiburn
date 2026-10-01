@@ -5,7 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$script:Repository = 'antiburn/antiburn'
+$script:Repository = 'TimurDudhaschGK/antiburn'
 $script:GitHubUrl = "https://github.com/$script:Repository"
 
 function Write-InstallerInfo {

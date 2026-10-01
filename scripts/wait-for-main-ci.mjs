@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 import { appendFileSync } from "node:fs";
 
-export function selectTrustedMainCi(runs, sha) {
+export function trustedCiBranch(repository) {
+  return repository === "TimurDudhaschGK/antiburn" ? "fix/main" : "main";
+}
+
+export function selectTrustedMainCi(runs, sha, branch = "main") {
   const candidates = runs
     .filter(
       (run) =>
         run.head_sha === sha &&
-        run.head_branch === "main" &&
+        run.head_branch === branch &&
         run.event === "push",
     )
     .sort((left, right) => (right.run_attempt ?? 0) - (left.run_attempt ?? 0));
@@ -57,6 +61,7 @@ async function main() {
   }
 
   const api = process.env.GITHUB_API_URL ?? "https://api.github.com";
+  const branch = trustedCiBranch(repository);
   let timeoutSeconds;
   let pollSeconds;
   try {
@@ -76,7 +81,7 @@ async function main() {
   const endpoint = new URL(
     `${api}/repos/${repository}/actions/workflows/${workflow}/runs`,
   );
-  endpoint.searchParams.set("branch", "main");
+  endpoint.searchParams.set("branch", branch);
   endpoint.searchParams.set("event", "push");
   endpoint.searchParams.set("head_sha", sha);
   endpoint.searchParams.set("per_page", "20");
@@ -112,9 +117,13 @@ async function main() {
       );
       process.exit(1);
     }
-    const selected = selectTrustedMainCi(payload.workflow_runs ?? [], sha);
+    const selected = selectTrustedMainCi(
+      payload.workflow_runs ?? [],
+      sha,
+      branch,
+    );
     if (selected.state === "success") {
-      console.log(`Trusted main CI: ${selected.run.html_url} (${sha})`);
+      console.log(`Trusted ${branch} CI: ${selected.run.html_url} (${sha})`);
       if (process.env.GITHUB_OUTPUT) {
         appendFileSync(
           process.env.GITHUB_OUTPUT,
@@ -125,13 +134,13 @@ async function main() {
     }
     if (selected.state === "failed") {
       console.error(
-        `::error::Main CI for ${sha} completed with ${selected.run.conclusion}: ${selected.run.html_url}`,
+        `::error::${branch} CI for ${sha} completed with ${selected.run.conclusion}: ${selected.run.html_url}`,
       );
       process.exit(1);
     }
     const detail = selected.run ? ` (${selected.run.html_url})` : "";
     console.log(
-      `Main CI for ${sha} is ${selected.state}${detail}; checking again in ${pollSeconds}s.`,
+      `${branch} CI for ${sha} is ${selected.state}${detail}; checking again in ${pollSeconds}s.`,
     );
     await sleep(
       Math.min(pollSeconds * 1000, Math.max(0, deadline - Date.now())),
@@ -139,7 +148,7 @@ async function main() {
   }
 
   console.error(
-    `::error::No successful main CI run for ${sha} within ${timeoutSeconds}s.`,
+    `::error::No successful ${branch} CI run for ${sha} within ${timeoutSeconds}s.`,
   );
   process.exit(1);
 }

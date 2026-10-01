@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-REPOSITORY="antiburn/antiburn"
+REPOSITORY="TimurDudhaschGK/antiburn"
 GITHUB_URL="https://github.com/${REPOSITORY}"
 TMP_DIR=""
 MOUNT_POINT=""

@@ -78,7 +78,7 @@ Describe 'install.ps1' {
             Invoke-AntiburnInstall -RequestedVersion '1.2.3'
 
             Should -Invoke Invoke-InstallerDownload -Times 1 -Exactly -ParameterFilter {
-                $Uri.AbsoluteUri -eq "https://github.com/antiburn/antiburn/releases/download/antiburn-v1.2.3/$script:ExpectedAsset"
+                $Uri.AbsoluteUri -eq "https://github.com/TimurDudhaschGK/antiburn/releases/download/antiburn-v1.2.3/$script:ExpectedAsset"
             }
             Should -Invoke Start-Process -Times 1 -Exactly -ParameterFilter {
                 (Split-Path -Leaf $FilePath) -eq $script:ExpectedAsset -and
@@ -146,7 +146,7 @@ Describe 'install.ps1' {
         Mock Invoke-WebRequest {
             [PSCustomObject]@{
                 BaseResponse = [PSCustomObject]@{
-                    ResponseUri = [uri] 'https://github.com/antiburn/antiburn/releases/tag/antiburn-v1.2.3'
+                    ResponseUri = [uri] 'https://github.com/TimurDudhaschGK/antiburn/releases/tag/antiburn-v1.2.3'
                 }
             }
         }
@@ -155,7 +155,7 @@ Describe 'install.ps1' {
         $release.Version | Should -Be '1.2.3'
         $release.Tag | Should -Be 'antiburn-v1.2.3'
         Should -Invoke Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
-            $Uri -eq 'https://github.com/antiburn/antiburn/releases/latest' -and $Method -eq 'Head'
+            $Uri -eq 'https://github.com/TimurDudhaschGK/antiburn/releases/latest' -and $Method -eq 'Head'
         }
     }
 
@@ -164,7 +164,7 @@ Describe 'install.ps1' {
             [PSCustomObject]@{
                 BaseResponse = [PSCustomObject]@{
                     RequestMessage = [PSCustomObject]@{
-                        RequestUri = [uri] 'https://github.com/antiburn/antiburn/releases/tag/antiburn-v1.2.3'
+                        RequestUri = [uri] 'https://github.com/TimurDudhaschGK/antiburn/releases/tag/antiburn-v1.2.3'
                     }
                 }
             }
@@ -183,7 +183,7 @@ Describe 'install.ps1' {
         Mock Invoke-WebRequest {
             [PSCustomObject]@{
                 BaseResponse = [PSCustomObject]@{
-                    ResponseUri = [uri] 'https://github.com/antiburn/antiburn/releases'
+                    ResponseUri = [uri] 'https://github.com/TimurDudhaschGK/antiburn/releases'
                 }
             }
         }
@@ -195,12 +195,24 @@ Describe 'install.ps1' {
         Mock Invoke-WebRequest {
             [PSCustomObject]@{
                 BaseResponse = [PSCustomObject]@{
-                    ResponseUri = [uri] 'https://github.com/antiburn/antiburn/releases/tag/antiburn-local-v0.1.6'
+                    ResponseUri = [uri] 'https://github.com/TimurDudhaschGK/antiburn/releases/tag/antiburn-local-v0.1.6'
                 }
             }
         }
 
         { Get-AntiburnRelease } | Should -Throw '*invalid release tag*'
+    }
+
+    It 'rejects an upstream redirect instead of installing upstream packages' {
+        Mock Invoke-WebRequest {
+            [PSCustomObject]@{
+                BaseResponse = [PSCustomObject]@{
+                    ResponseUri = [uri] 'https://github.com/antiburn/antiburn/releases/tag/antiburn-v1.2.3'
+                }
+            }
+        }
+
+        { Get-AntiburnRelease } | Should -Throw '*unexpected release URL*'
     }
 
     It 'skips the lookup when a version is requested' {

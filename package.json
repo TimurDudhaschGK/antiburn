@@ -6,7 +6,7 @@
   "description": "pnpm workspace root for the antiburn desktop application.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/antiburn/antiburn.git"
+    "url": "https://github.com/TimurDudhaschGK/antiburn.git"
   },
   "packageManager": "pnpm@11.6.0",
   "engines": {

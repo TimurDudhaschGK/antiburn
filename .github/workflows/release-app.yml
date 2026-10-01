@@ -15,7 +15,7 @@ name: Release app
 #           manifest in the tree, is there a changelog entry, is the updater
 #           actually configured to produce verifiable artifacts
 #   trusted-main-ci
-#           proves that this exact tag SHA passed the protected main-branch CI
+#           proves that this exact tag SHA passed the maintained-branch CI
 #           run; a release never spends another full matrix proving the same SHA
 #   sbom    dependency inventories, generated with no credentials in scope
 #   build   the only jobs that see signing credentials, one per release target
@@ -28,8 +28,8 @@ on:
 
 # Least privilege by default. `contents: write` is granted to exactly one job,
 # and the provenance token scopes are granted only where an attestation is
-# actually produced. This workflow has no `pull_request` trigger at all, so a
-# fork can never reach the `release` environment's credentials.
+# actually produced. This workflow has no `pull_request` trigger. Tag builds
+# use this fork's `release` environment credentials.
 permissions:
   contents: read
 
@@ -47,10 +47,8 @@ env:
 jobs:
   verify:
     name: Verify tag, manifests, and notes
-    # Tags pushed in a fork must not start a release run. There are no
-    # credentials there to leak, but a fork producing "antiburn releases" is
-    # its own problem.
-    if: github.repository == 'antiburn/antiburn'
+    # Release only from this fork. Use its release environment credentials.
+    if: github.repository == 'TimurDudhaschGK/antiburn'
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -124,7 +122,7 @@ jobs:
           if-no-files-found: error
 
   trusted-main-ci:
-    name: Trust exact main CI
+    name: Trust exact maintained-branch CI
     needs: verify
     runs-on: ubuntu-24.04
     permissions:
@@ -143,9 +141,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       # A tag can be pushed as soon as the release PR merges. If the trusted
-      # main run is still in flight, wait for it rather than starting a second
+      # maintained-branch run is still in flight, wait for it instead of starting a second
       # copy of the matrix or asking a maintainer to time the tag by hand.
-      - name: Wait for this exact SHA to pass main CI
+      - name: Wait for this exact SHA to pass maintained-branch CI
         id: ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -157,9 +155,9 @@ jobs:
           SHA: ${{ steps.ci.outputs.sha }}
         run: |
           {
-            echo "## Trusted main CI"
+            echo "## Trusted maintained-branch CI"
             echo
-            echo "Release gate: [successful main run](${RUN_URL}) for \`${SHA}\`."
+            echo "Release gate: [successful maintained-branch run](${RUN_URL}) for \`${SHA}\`."
           } >> "$GITHUB_STEP_SUMMARY"
 
   sbom:
@@ -352,7 +350,7 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           targets: ${{ matrix.target }}
 
-      # The version-bump main run compiled this same target without access to
+      # The version-bump branch run compiled this same target without access to
       # signing credentials. Release jobs restore that dependency cache but
       # never save after secrets have entered scope.
       - name: Restore warmed release dependency cache
@@ -1081,7 +1079,7 @@ jobs:
             echo
             echo "### Automated evidence"
             echo
-            echo "The workflow verified the exact main CI SHA, six updater platforms, immutable URLs, detached signatures, asset presence, checksums, and the signing mode reported by every build."
+            echo "The workflow verified the exact maintained-branch CI SHA, six updater platforms, immutable URLs, detached signatures, asset presence, checksums, and the signing mode reported by every build."
             echo
             echo "| Platform | Target | Signing mode |"
             echo "| --- | --- | --- |"

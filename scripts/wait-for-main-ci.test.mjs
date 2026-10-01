@@ -5,9 +5,38 @@ import {
   parsePositiveInteger,
   requestTimeoutMilliseconds,
   selectTrustedMainCi,
+  trustedCiBranch,
 } from "./wait-for-main-ci.mjs";
 
 const SHA = "0123456789abcdef0123456789abcdef01234567";
+
+test("the maintained fork branch needs its own exact push CI run", () => {
+  const branch = trustedCiBranch("TimurDudhaschGK/antiburn");
+  assert.equal(branch, "fix/main");
+  assert.equal(trustedCiBranch("antiburn/antiburn"), "main");
+  assert.equal(trustedCiBranch("someone/antiburn"), "main");
+  assert.equal(selectTrustedMainCi([run()], SHA, branch).state, "missing");
+  assert.equal(
+    selectTrustedMainCi([run({ head_branch: branch })], SHA, branch).state,
+    "success",
+  );
+  assert.equal(
+    selectTrustedMainCi(
+      [run({ head_branch: branch, event: "pull_request" })],
+      SHA,
+      branch,
+    ).state,
+    "missing",
+  );
+  assert.equal(
+    selectTrustedMainCi(
+      [run({ head_branch: branch, head_sha: "different" })],
+      SHA,
+      branch,
+    ).state,
+    "missing",
+  );
+});
 
 function run(overrides = {}) {
   return {

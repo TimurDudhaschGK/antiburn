@@ -66,7 +66,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 if [ "$output" = "/dev/null" ]; then
-  printf '%s' 'https://github.com/antiburn/antiburn/releases/tag/antiburn-v1.2.3'
+  printf '%s' 'https://github.com/TimurDudhaschGK/antiburn/releases/tag/antiburn-v1.2.3'
 elif [ "\${url##*/}" = "SHA256SUMS" ]; then
   printf '%s  %s\\n' '${checksum}' '${packageType === "deb" ? `antiburn_1.2.3_${debArch}.deb` : `antiburn_1.2.3_${appimageArch}.AppImage`}' > "$output"
 else

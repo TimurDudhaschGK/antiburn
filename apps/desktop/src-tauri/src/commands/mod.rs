@@ -2448,7 +2448,7 @@ pub fn open_folder_access_settings(app: tauri::AppHandle) -> CommandResult<()> {
 #[tauri::command]
 pub fn open_github_repo(app: tauri::AppHandle) -> CommandResult<()> {
     app.opener()
-        .open_url("https://github.com/antiburn/antiburn", None::<&str>)
+        .open_url("https://github.com/TimurDudhaschGK/antiburn", None::<&str>)
         .map_err(fail)
 }
 
@@ -2457,7 +2457,7 @@ pub fn open_github_repo(app: tauri::AppHandle) -> CommandResult<()> {
 pub fn open_remote_helper_downloads(app: tauri::AppHandle) -> CommandResult<()> {
     app.opener()
         .open_url(
-            "https://github.com/antiburn/antiburn/releases",
+            "https://github.com/TimurDudhaschGK/antiburn/releases",
             None::<&str>,
         )
         .map_err(fail)

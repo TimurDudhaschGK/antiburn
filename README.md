@@ -7,11 +7,11 @@
   <img width="100%" alt="antiburn: the popover with live limit meters and today's sessions, a session's context chart with a compaction, and its cost and tools breakdowns" src="https://github.com/user-attachments/assets/d1c1404e-4e6e-4ef3-8dbd-726150888e3d" />
 </picture>
 
-[![License](https://img.shields.io/github/license/antiburn/antiburn)](LICENSE)
+[![License](https://img.shields.io/github/license/TimurDudhaschGK/antiburn)](LICENSE)
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-informational)](docs/support.md)
-[![Release](https://img.shields.io/github/v/release/antiburn/antiburn?filter=antiburn-v*)](https://github.com/antiburn/antiburn/releases/latest)
-[![CI](https://github.com/antiburn/antiburn/actions/workflows/ci.yml/badge.svg)](https://github.com/antiburn/antiburn/actions/workflows/ci.yml)
-[![GitHub stars](https://img.shields.io/github/stars/antiburn/antiburn)](https://github.com/antiburn/antiburn/stargazers)
+[![Release](https://img.shields.io/github/v/release/TimurDudhaschGK/antiburn?filter=antiburn-v*)](https://github.com/TimurDudhaschGK/antiburn/releases/latest)
+[![CI](https://github.com/TimurDudhaschGK/antiburn/actions/workflows/ci.yml/badge.svg)](https://github.com/TimurDudhaschGK/antiburn/actions/workflows/ci.yml)
+[![GitHub stars](https://img.shields.io/github/stars/TimurDudhaschGK/antiburn)](https://github.com/TimurDudhaschGK/antiburn/stargazers)
 [![aislop score](https://badges.scanaislop.com/score/antiburn/antiburn.svg)](https://scanaislop.com/antiburn/antiburn)
 [![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white)](https://tauri.app/)
 [![Slack](https://img.shields.io/badge/Slack-join-4A154B?logo=slack&logoColor=white)](https://antiburn.com/slack)
@@ -34,21 +34,25 @@ antiburn supports Claude Code, Codex, Cursor, GitHub Copilot, Cline, OpenCode, K
 
 ## Install
 
+This fork maintains its fixes on `fix/main`. Installers and application updates
+use this fork's releases. See [fork release setup](docs/runbooks/fork-release.md)
+for the signing and CI requirements before publishing a package.
+
 macOS or Linux:
 
 ```sh
-curl -fsSL https://antiburn.com/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/TimurDudhaschGK/antiburn/fix/main/install.sh | sh
 ```
 
 Windows 11 PowerShell (x64 and ARM64):
 
 ```powershell
-irm https://antiburn.com/install.ps1 | iex
+irm https://raw.githubusercontent.com/TimurDudhaschGK/antiburn/fix/main/install.ps1 | iex
 ```
 
 The installers verify release checksums. macOS also verifies the application
 signature with Gatekeeper. Manual packages are available from the
-[latest release](https://github.com/antiburn/antiburn/releases/latest).
+[latest release](https://github.com/TimurDudhaschGK/antiburn/releases/latest).
 
 ## Development
 
@@ -87,7 +91,7 @@ Open source, so if you're worried, point your coding agent at this repo to audit
 
 Questions, fixes, what's burning: join the [antiburn Slack](https://antiburn.com/slack).
 
-Bugs and feature requests go in [GitHub issues](https://github.com/antiburn/antiburn/issues).
+Bugs and feature requests go in [GitHub issues](https://github.com/TimurDudhaschGK/antiburn/issues).
 
 ## Project links
 

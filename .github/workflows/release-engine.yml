@@ -29,7 +29,7 @@ env:
 jobs:
   verify:
     name: Verify tag and manifest
-    if: github.repository == 'antiburn/antiburn'
+    if: github.repository == 'TimurDudhaschGK/antiburn'
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -77,7 +77,7 @@ jobs:
           if-no-files-found: error
 
   trusted-main-ci:
-    name: Trust exact main CI
+    name: Trust exact maintained-branch CI
     needs: verify
     runs-on: ubuntu-24.04
     permissions:
@@ -95,7 +95,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Wait for this exact SHA to pass main CI
+      - name: Wait for this exact SHA to pass maintained-branch CI
         id: ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -107,9 +107,9 @@ jobs:
           SHA: ${{ steps.ci.outputs.sha }}
         run: |
           {
-            echo "## Trusted main CI"
+            echo "## Trusted maintained-branch CI"
             echo
-            echo "Release gate: [successful main run](${RUN_URL}) for \`${SHA}\`."
+            echo "Release gate: [successful maintained-branch run](${RUN_URL}) for \`${SHA}\`."
           } >> "$GITHUB_STEP_SUMMARY"
 
   package:
@@ -276,7 +276,7 @@ jobs:
             echo
             echo "Nothing is published yet. Follow \`docs/runbooks/release.md\`."
             echo
-            echo "The workflow verified this exact main SHA, the deterministic source archive, its full test suite after extraction, inventory, and checksums. Manual review remains responsible for inspecting the archive and reading the release notes."
+            echo "The workflow verified this exact maintained-branch SHA, the deterministic source archive, its full test suite after extraction, inventory, and checksums. Manual review remains responsible for inspecting the archive and reading the release notes."
             echo
             echo "| Asset | SHA-256 |"
             echo "| --- | --- |"
