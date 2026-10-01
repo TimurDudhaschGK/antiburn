@@ -210,11 +210,15 @@ describe("SettingsView", () => {
     await waitFor(() => expect(document.documentElement.dataset["theme"]).toBeUndefined())
   })
 
-  it("persists the launch-at-login preference and describes the applied behavior", async () => {
+  it("persists the startup request and explains Windows re-enable behavior", async () => {
     render(<SettingsView />)
 
     const toggle = await screen.findByRole("switch", { name: "Start at login" })
-    expect(screen.getByText("Starts antiburn automatically at login.")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Requests startup at login. If Windows disabled antiburn, enable it in Windows Settings → Apps → Startup.",
+      ),
+    ).toBeInTheDocument()
 
     fireEvent.click(toggle)
 

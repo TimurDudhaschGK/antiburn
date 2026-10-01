@@ -16,7 +16,7 @@ import {
   type AppInfo,
   type ScanStatus,
 } from "../../lib/ipc"
-import { isMacOS } from "../../lib/platform"
+import { detectPlatform, isMacOS } from "../../lib/platform"
 import { relativeTime } from "../../lib/presentation/relativeTime"
 import { scanStatusStore } from "../../lib/scanStatusStore"
 import type { AppSettingsController } from "./useAppSettings"
@@ -213,7 +213,11 @@ export function GeneralPane({ settings, update, info, loaded }: GeneralPaneProps
           )}
           <SettingsToggleRow
             searchId="startAtLogin"
-            description="Starts antiburn automatically at login."
+            description={
+              detectPlatform() === "windows"
+                ? "Requests startup at login. If Windows disabled antiburn, enable it in Windows Settings → Apps → Startup."
+                : "Starts antiburn automatically at login."
+            }
             checked={settings.launchAtLogin}
             onChange={(next) => void update({ launchAtLogin: next })}
           />

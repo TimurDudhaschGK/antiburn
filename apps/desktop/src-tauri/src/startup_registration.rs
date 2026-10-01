@@ -121,39 +121,67 @@ fn reconcile_platform<R: Runtime>(app: &tauri::AppHandle<R>, desired: bool) {
 #[cfg(target_os = "windows")]
 fn reconcile_windows<R: Runtime>(app: &tauri::AppHandle<R>, desired: bool) -> anyhow::Result<()> {
     use winreg::RegKey;
-    use winreg::enums::{HKEY_CURRENT_USER, KEY_READ, KEY_SET_VALUE};
+    use winreg::enums::HKEY_CURRENT_USER;
 
     const RUN_KEY: &str = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
-    const STARTUP_APPROVED_KEY: &str =
-        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run";
-    const ENABLED: [u8; 12] = [0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-
+    let command = if desired {
+        Some(windows_run_command(
+            &std::env::current_exe()?.to_string_lossy(),
+        ))
+    } else {
+        None
+    };
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    let run = hkcu.open_subkey_with_flags(RUN_KEY, KEY_READ | KEY_SET_VALUE)?;
-    if desired {
-        // Always write the current path: an installed update or a moved
-        // portable build must not leave a present-but-stale registration.
-        let command = windows_run_command(&std::env::current_exe()?.to_string_lossy());
-        run.set_value("antiburn", &command)?;
-
-        // If Task Manager has an override row, make an in-app opt-in effective
-        // there too. Absence is the normal enabled state and needs no row.
-        if let Ok(approved) = hkcu.open_subkey_with_flags(STARTUP_APPROVED_KEY, KEY_SET_VALUE) {
-            approved.set_raw_value(
-                "antiburn",
-                &winreg::RegValue {
-                    vtype: winreg::enums::RegType::REG_BINARY,
-                    bytes: ENABLED.to_vec().into(),
-                },
-            )?;
-        }
-    } else if let Err(error) = run.delete_value("antiburn")
-        && error.kind() != std::io::ErrorKind::NotFound
-    {
-        return Err(error.into());
-    }
+    reconcile_windows_run(&hkcu, RUN_KEY, command.as_deref())?;
     let _ = app;
     Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn reconcile_windows_run(
+    root: &winreg::RegKey,
+    path: &str,
+    command: Option<&str>,
+) -> std::io::Result<()> {
+    use winreg::enums::{KEY_READ, KEY_SET_VALUE};
+
+    let run = match root.open_subkey_with_flags(path, KEY_READ | KEY_SET_VALUE) {
+        Ok(run) => run,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            if command.is_none() {
+                return Ok(());
+            }
+            root.create_subkey_with_flags(path, KEY_READ | KEY_SET_VALUE)?
+                .0
+        }
+        Err(error) => return Err(error),
+    };
+    // Windows owns startup approval. Keep its records on every transition.
+    reconcile_windows_run_value(&run, command)
+}
+
+#[cfg(target_os = "windows")]
+fn reconcile_windows_run_value(run: &winreg::RegKey, command: Option<&str>) -> std::io::Result<()> {
+    use winreg::types::ToRegValue;
+
+    let current = match run.get_raw_value("antiburn") {
+        Ok(current) => Some(current),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => return Err(error),
+    };
+    let desired = command.map(str::to_owned);
+    if current == desired.as_ref().map(ToRegValue::to_reg_value) {
+        return Ok(());
+    }
+    if let Some(command) = command {
+        run.set_value("antiburn", &command)
+    } else {
+        match run.delete_value("antiburn") {
+            Ok(()) => Ok(()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(error) => Err(error),
+        }
+    }
 }
 
 #[cfg(any(target_os = "windows", test))]
@@ -321,5 +349,162 @@ mod tests {
             ..previous.clone()
         };
         assert!(should_reconcile_after_save(&previous, &disabled));
+        assert!(should_reconcile_after_save(&disabled, &previous));
+    }
+}
+
+#[cfg(target_os = "windows")]
+#[cfg(test)]
+mod windows_tests {
+    use super::*;
+    use winreg::RegKey;
+    use winreg::enums::{HKEY_CURRENT_USER, KEY_READ, KEY_SET_VALUE, REG_BINARY};
+
+    struct TestRegistry {
+        path: String,
+        root: RegKey,
+    }
+
+    impl TestRegistry {
+        fn new() -> Self {
+            static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+            let path = format!(
+                r"Software\antiburn-tests\{}-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .expect("test clock follows the Unix epoch")
+                    .as_nanos(),
+                NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+            );
+            let root = RegKey::predef(HKEY_CURRENT_USER)
+                .create_subkey(&path)
+                .expect("create isolated test registry")
+                .0;
+            Self { path, root }
+        }
+
+        fn run(&self) -> RegKey {
+            self.root
+                .create_subkey("Run")
+                .expect("create test Run key")
+                .0
+        }
+    }
+
+    impl Drop for TestRegistry {
+        fn drop(&mut self) {
+            RegKey::predef(HKEY_CURRENT_USER)
+                .delete_subkey_all(&self.path)
+                .expect("remove isolated test registry");
+        }
+    }
+
+    #[test]
+    fn unchanged_run_value_needs_no_write_access() {
+        let registry = TestRegistry::new();
+        let command = windows_run_command(r"C:\Program Files\antiburn\antiburn.exe");
+        registry.run().set_value("antiburn", &command).unwrap();
+        let read_only = registry
+            .root
+            .open_subkey_with_flags("Run", KEY_READ)
+            .unwrap();
+        reconcile_windows_run_value(&read_only, Some(&command)).unwrap();
+    }
+
+    #[test]
+    fn absent_run_key_and_value_are_registered_then_updated_once() {
+        let registry = TestRegistry::new();
+        let command = windows_run_command(r"C:\Program Files\antiburn\antiburn.exe");
+        reconcile_windows_run(&registry.root, "Run", Some(&command)).unwrap();
+        assert_eq!(
+            registry.run().get_value::<String, _>("antiburn").unwrap(),
+            command
+        );
+        let updated = windows_run_command(r"D:\Moved app\antiburn.exe");
+        reconcile_windows_run(&registry.root, "Run", Some(&updated)).unwrap();
+        let read_only = registry
+            .root
+            .open_subkey_with_flags("Run", KEY_READ)
+            .unwrap();
+        assert_eq!(
+            read_only.get_value::<String, _>("antiburn").unwrap(),
+            updated
+        );
+        reconcile_windows_run_value(&read_only, Some(&updated)).unwrap();
+        registry.run().delete_value("antiburn").unwrap();
+        reconcile_windows_run(&registry.root, "Run", Some(&updated)).unwrap();
+        assert_eq!(
+            registry.run().get_value::<String, _>("antiburn").unwrap(),
+            updated
+        );
+    }
+
+    #[test]
+    fn disable_removes_only_our_value_and_absence_is_a_noop() {
+        let registry = TestRegistry::new();
+        reconcile_windows_run(&registry.root, "Run", None).unwrap();
+        assert!(registry.root.open_subkey("Run").is_err());
+        let run = registry.run();
+        run.set_value("antiburn", &"old command").unwrap();
+        run.set_value("another-app", &"keep me").unwrap();
+        reconcile_windows_run(&registry.root, "Run", None).unwrap();
+        assert_eq!(
+            run.get_value::<String, _>("antiburn").unwrap_err().kind(),
+            std::io::ErrorKind::NotFound
+        );
+        assert_eq!(
+            run.get_value::<String, _>("another-app").unwrap(),
+            "keep me"
+        );
+        let read_only = registry
+            .root
+            .open_subkey_with_flags("Run", KEY_READ)
+            .unwrap();
+        reconcile_windows_run_value(&read_only, None).unwrap();
+    }
+
+    #[test]
+    fn windows_disable_survives_launch_update_and_explicit_reenable() {
+        let registry = TestRegistry::new();
+        let approved = registry
+            .root
+            .create_subkey(r"StartupApproved\Run")
+            .unwrap()
+            .0;
+        let disabled = winreg::RegValue {
+            vtype: REG_BINARY,
+            bytes: vec![3, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8].into(),
+        };
+        approved.set_raw_value("antiburn", &disabled).unwrap();
+        let command = windows_run_command(r"C:\antiburn\antiburn.exe");
+        for command in [
+            Some(command.as_str()),
+            Some(command.as_str()),
+            Some(r#""D:\Updated app\antiburn.exe" --background"#),
+            None,
+            Some(command.as_str()),
+        ] {
+            reconcile_windows_run(&registry.root, "Run", command).unwrap();
+            assert_eq!(approved.get_raw_value("antiburn").unwrap(), disabled);
+        }
+    }
+
+    #[test]
+    fn registry_read_errors_do_not_overwrite_existing_values() {
+        let registry = TestRegistry::new();
+        let run = registry.run();
+        run.set_value("antiburn", &42u32).unwrap();
+        let write_only = registry
+            .root
+            .open_subkey_with_flags("Run", KEY_SET_VALUE)
+            .unwrap();
+        assert!(reconcile_windows_run_value(&write_only, Some("new command")).is_err());
+        assert_eq!(run.get_value::<u32, _>("antiburn").unwrap(), 42);
+        reconcile_windows_run(&registry.root, "Run", None).unwrap();
+        assert_eq!(
+            run.get_raw_value("antiburn").unwrap_err().kind(),
+            std::io::ErrorKind::NotFound
+        );
     }
 }

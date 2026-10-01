@@ -3,7 +3,7 @@ import { AlertTriangle, Check, ChevronRight, FolderPlus, Lock, X } from "lucide-
 import appIcon from "../../assets/app-icon.png"
 import { useState } from "react"
 
-import { isMacOS } from "../../lib/platform"
+import { detectPlatform, isMacOS } from "../../lib/platform"
 import { cn } from "../../lib/cn"
 
 import { FolderPermissionNotice } from "../../components/repositories/FolderPermissionNotice"
@@ -654,6 +654,11 @@ function Ready({
               aria-label="Launch antiburn on startup"
             />
           </div>
+          {detectPlatform() === "windows" && (
+            <p className="type-footnote text-label-secondary">
+              If Windows disabled antiburn, enable it in Windows Settings → Apps → Startup.
+            </p>
+          )}
           <div className="flex items-center gap-3">
             <span className="type-callout text-label">Nudges respect Do Not Disturb</span>
             <span className="flex-1" />

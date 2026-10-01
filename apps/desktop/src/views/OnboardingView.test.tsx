@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { LiveUsageMeterPayload, LiveUsageSummaryPayload } from "../lib/ipc"
 import { OnboardingView } from "./OnboardingView"
 import { OnboardingSession } from "./onboarding/OnboardingSession"
+import * as platform from "../lib/platform"
 
 const invoke = vi.hoisted(() => vi.fn())
 const openDialog = vi.hoisted(() => vi.fn())
@@ -535,6 +536,21 @@ describe("OnboardingView", () => {
         nudgesRespectDnd: true,
       }),
     )
+  })
+
+  it("explains that Windows must re-enable a disabled startup app", async () => {
+    const detectPlatform = vi.spyOn(platform, "detectPlatform").mockReturnValue("windows")
+    try {
+      render(<OnboardingView />)
+      await advanceToReady()
+      expect(
+        screen.getByText(
+          "If Windows disabled antiburn, enable it in Windows Settings → Apps → Startup.",
+        ),
+      ).toBeInTheDocument()
+    } finally {
+      detectPlatform.mockRestore()
+    }
   })
 
   it("keeps onboarding open with an actionable error when finishing fails", async () => {

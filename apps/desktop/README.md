@@ -302,6 +302,11 @@ These build-level limits affect desktop development:
   escaped Desktop Entry. New installs are asked on the Ready step (default on),
   General reflects the same preference, and development runs — including
   `cargo run --release` — never change the machine's login items.
+  Windows writes the Run value only when it is absent or its command changes.
+  It preserves Windows startup approval records, including a disable from Task
+  Manager or Settings, through launches, updates, and in-app toggles. The in-app
+  toggle records the startup request; Windows Settings → Apps → Startup must
+  re-enable an app that Windows disabled.
 - Agent icons use three tiers, in `src/lib/agentIcon.tsx`: a brand mark for
   agents with a recorded vendor logo, a letter tile for known agents without
   one, and a neutral surface glyph only for `generic-agent`. Original
