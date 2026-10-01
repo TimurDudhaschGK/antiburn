@@ -20,7 +20,7 @@ CI changes, and documentation that no user acts on stay out — see
 
 ## [Unreleased]
 
-## [0.9.1] - 2026-10-01
+## [0.9.2] - 2026-10-01
 
 This is the first desktop release from the TimurDudhaschGK fork. Packages are
 available for Windows and Linux on x64 and ARM64.
@@ -45,6 +45,10 @@ available for Windows and Linux on x64 and ARM64.
 - Native Windows 11 ARM64 builds. The PowerShell installer selects the ARM64
   package, including when PowerShell runs under emulation, and the app receives
   native ARM64 updates.
+
+## [0.9.1] - 2026-10-01
+
+This version was tagged but not published. Its changes ship in 0.9.2.
 
 ## [0.9.0] - 2026-09-29
 
