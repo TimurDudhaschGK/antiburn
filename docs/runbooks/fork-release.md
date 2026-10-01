@@ -56,4 +56,4 @@ OAuth inputs. Configure both `GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_ID` and
 environment to include refresh support. Without them, local session analysis
 remains available; this fork release does not promise credential refresh.
 
-Linux packaging pins the linuxdeploy [1-alpha-20251107-1 release](https://github.com/linuxdeploy/linuxdeploy/releases/tag/1-alpha-20251107-1) by asset ID and SHA-256 for each architecture. Keep those pins on a dated release. Its continuous release replaces assets and can invalidate older IDs.
+Linux packaging pins the linuxdeploy [1-alpha-20251107-1 release](https://github.com/linuxdeploy/linuxdeploy/releases/tag/1-alpha-20251107-1) by dated release URL and SHA-256 for each architecture. Keep those pins on a dated release. Its continuous release replaces assets and can invalidate older IDs.

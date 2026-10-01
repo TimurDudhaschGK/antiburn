@@ -278,7 +278,7 @@ jobs:
             artifact: linux-x64
             arch_label: x64
             updater_platform: linux-x86_64-appimage
-            linuxdeploy_asset_id: "313839329"
+            linuxdeploy_url: "https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20251107-1/linuxdeploy-x86_64.AppImage"
             linuxdeploy_sha256: "c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d"
           # The same glibc-floor reasoning: ubuntu-24.04-arm pins the ARM64
           # floor at glibc 2.39.
@@ -289,7 +289,7 @@ jobs:
             artifact: linux-arm64
             arch_label: aarch64
             updater_platform: linux-aarch64-appimage
-            linuxdeploy_asset_id: "313839294"
+            linuxdeploy_url: "https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20251107-1/linuxdeploy-aarch64.AppImage"
             linuxdeploy_sha256: "620095110d693282b8ebeb244a95b5e911cf8f65f76c88b4b47d16ae6346fcff"
     steps:
       - name: Checkout
@@ -328,7 +328,17 @@ jobs:
             libxdo-dev \
             patchelf \
             pkg-config \
-            wget
+            wget \
+            xdg-utils
+
+      - name: Verify Linux packaging tools
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x /usr/bin/xdg-open
+          command -v desktop-file-validate
+          command -v patchelf
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable branch
@@ -591,14 +601,14 @@ jobs:
 
       # Tauri 2.11.4 caches a 2024 linuxdeploy build that bundles libwayland-client.
       # The dated 1-alpha-20251107-1 build uses the graphics-library exclusions.
-      # The asset id and hash are per-architecture matrix values; the cache
+      # The release URL and hash are per-architecture matrix values; the cache
       # file name must match what tauri-bundler looks for on this host, and
       # `uname -m` gives that same architecture label.
       - name: Install the pinned Linux AppImage bundler
         if: runner.os == 'Linux'
         shell: bash
         env:
-          LINUXDEPLOY_ASSET_ID: ${{ matrix.linuxdeploy_asset_id }}
+          LINUXDEPLOY_URL: ${{ matrix.linuxdeploy_url }}
           LINUXDEPLOY_SHA256: ${{ matrix.linuxdeploy_sha256 }}
         run: |
           set -euo pipefail
@@ -606,8 +616,7 @@ jobs:
           destination="${tools}/linuxdeploy-$(uname -m).AppImage"
           mkdir -p "$tools"
           curl --fail --location --retry 3 \
-            --header 'Accept: application/octet-stream' \
-            "https://api.github.com/repos/linuxdeploy/linuxdeploy/releases/assets/${LINUXDEPLOY_ASSET_ID}" \
+            "$LINUXDEPLOY_URL" \
             --output "$destination"
           echo "${LINUXDEPLOY_SHA256}  ${destination}" | sha256sum --check --strict
           chmod +x "$destination"
