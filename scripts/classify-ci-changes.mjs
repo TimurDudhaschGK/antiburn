@@ -150,7 +150,8 @@ export function isPureAppReleaseChange(files, readAtRef) {
     changedOnlyVersion(
       readAtRef("base", "crates/antiburn-remote/Cargo.lock"),
       readAtRef("head", "crates/antiburn-remote/Cargo.lock"),
-      (contents) => cargoLockWithVersionPlaceholder(contents, "antiburn-remote"),
+      (contents) =>
+        cargoLockWithVersionPlaceholder(contents, "antiburn-remote"),
     ) &&
     changedOnlyVersions(
       readAtRef("base", "apps/desktop/src-tauri/Cargo.lock"),
@@ -265,9 +266,10 @@ function git(...args) {
 export function listChangedFiles(base, head, runGit = git) {
   // Do not filter statuses here. A deletion can remove executable code or a
   // dependency boundary just as surely as an addition can introduce one.
-  return runGit("diff", "--name-only", base, head)
-    .split(/\r?\n/)
-    .filter(Boolean);
+  const output = /^0{40}$/.test(base)
+    ? runGit("ls-tree", "-r", "--name-only", head)
+    : runGit("diff", "--name-only", base, head);
+  return output.split(/\r?\n/).filter(Boolean);
 }
 
 function main() {

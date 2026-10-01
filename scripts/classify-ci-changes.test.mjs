@@ -58,7 +58,10 @@ function appReleaseValues(from, to) {
     "head:apps/desktop/src-tauri/Cargo.lock": appCargoLock(to, to),
     "base:crates/antiburn-remote/Cargo.toml": remoteCargoToml(from),
     "head:crates/antiburn-remote/Cargo.toml": remoteCargoToml(to),
-    "base:crates/antiburn-remote/Cargo.lock": cargoLock("antiburn-remote", from),
+    "base:crates/antiburn-remote/Cargo.lock": cargoLock(
+      "antiburn-remote",
+      from,
+    ),
     "head:crates/antiburn-remote/Cargo.lock": cargoLock("antiburn-remote", to),
   };
 }
@@ -119,6 +122,21 @@ test("includes deleted paths in routing instead of silently skipping them", () =
   assert.equal(classifyPaths(files).frontend, true);
 });
 
+test("a new branch classifies the full tree without diffing the zero SHA", () => {
+  let receivedArguments;
+  const files = listChangedFiles("0".repeat(40), "head", (...arguments_) => {
+    receivedArguments = arguments_;
+    return ".github/workflows/ci.yml\r\napps/desktop/src/main.tsx\r\n";
+  });
+
+  assert.deepEqual(receivedArguments, ["ls-tree", "-r", "--name-only", "head"]);
+  const result = classifyPaths(files);
+  assert.equal(result.full, true);
+  assert.equal(result.frontend, true);
+  assert.equal(result.desktop_backend, true);
+  assert.equal(result.engine, true);
+});
+
 test("recognizes an app release when every executable manifest changes only version", () => {
   const values = appReleaseValues("1.0.0", "1.0.1");
   assert.equal(isPureAppReleaseChange(APP_RELEASE_FILES, reader(values)), true);
@@ -138,7 +156,10 @@ test("rejects an app release that leaves the remote helper behind", () => {
     ),
     "head:apps/desktop/src-tauri/Cargo.lock": appCargoLock("1.0.1", "1.0.0"),
   };
-  assert.equal(isPureAppReleaseChange(APP_RELEASE_FILES, reader(values)), false);
+  assert.equal(
+    isPureAppReleaseChange(APP_RELEASE_FILES, reader(values)),
+    false,
+  );
 });
 
 test("rejects an app release that smuggles a dependency change into Cargo files", () => {
@@ -151,7 +172,10 @@ test("rejects an app release that smuggles a dependency change into Cargo files"
       "2.0.0",
     ),
   };
-  assert.equal(isPureAppReleaseChange(APP_RELEASE_FILES, reader(values)), false);
+  assert.equal(
+    isPureAppReleaseChange(APP_RELEASE_FILES, reader(values)),
+    false,
+  );
   assert.equal(
     classifyChanges(APP_RELEASE_FILES, reader(values)).desktop_backend,
     true,
