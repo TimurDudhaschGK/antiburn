@@ -46,7 +46,16 @@ function harness({
   const log = join(directory, "commands.log");
   mkdirSync(bin);
   mkdirSync(home);
-  linkCommands(bin, ["awk", "chmod", "id", "ln", "mkdir", "mktemp", "mv", "rm"]);
+  linkCommands(bin, [
+    "awk",
+    "chmod",
+    "id",
+    "ln",
+    "mkdir",
+    "mktemp",
+    "mv",
+    "rm",
+  ]);
 
   executable(
     join(bin, "uname"),
@@ -186,8 +195,21 @@ test("install.sh installs the verified AppImage without root", () => {
   });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Verified SHA-256/);
-  assert.ok(existsSync(join(context.home, "Applications", "antiburn.AppImage")));
+  assert.ok(
+    existsSync(join(context.home, "Applications", "antiburn.AppImage")),
+  );
   assert.ok(existsSync(join(context.home, ".local", "bin", "antiburn")));
+});
+
+test("install.sh explains that this fork has no macOS packages before downloading", () => {
+  const context = harness({ os: "Darwin", arch: "arm64" });
+  const result = spawnSync("/bin/sh", [installer], {
+    encoding: "utf8",
+    env: context.env,
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /macOS packages are not available/);
+  assert.doesNotMatch(result.stdout, /Downloading antiburn_/);
 });
 
 test("install.sh uses APT for a verified Debian package", () => {
@@ -211,7 +233,9 @@ test("install.sh installs the aarch64 AppImage on an arm64 host", () => {
   });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /antiburn_1\.2\.3_aarch64\.AppImage/);
-  assert.ok(existsSync(join(context.home, "Applications", "antiburn.AppImage")));
+  assert.ok(
+    existsSync(join(context.home, "Applications", "antiburn.AppImage")),
+  );
 });
 
 test("install.sh uses APT for the arm64 Debian package on an arm64 host", () => {
@@ -250,7 +274,10 @@ test("install.sh stops before installation when the checksum differs", () => {
   });
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Checksum verification failed/);
-  assert.equal(existsSync(join(context.home, "Applications", "antiburn.AppImage")), false);
+  assert.equal(
+    existsSync(join(context.home, "Applications", "antiburn.AppImage")),
+    false,
+  );
 });
 
 test("a truncated install.sh does not start installation", () => {
@@ -263,7 +290,10 @@ test("a truncated install.sh does not start installation", () => {
     env: context.env,
   });
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(existsSync(join(context.home, "Applications", "antiburn.AppImage")), false);
+  assert.equal(
+    existsSync(join(context.home, "Applications", "antiburn.AppImage")),
+    false,
+  );
 });
 
 test("install.sh contains the required macOS trust checks", () => {
@@ -279,9 +309,14 @@ test("install.sh contains the required macOS trust checks", () => {
 });
 
 test("the application release publishes both root installers before checksums", () => {
-  const workflow = readFileSync(join(root, ".github", "workflows", "release-app.yml"), "utf8");
+  const workflow = readFileSync(
+    join(root, ".github", "workflows", "release-app.yml"),
+    "utf8",
+  );
   const copyIndex = workflow.indexOf("cp install.sh install.ps1 dist/");
-  const checksumIndex = workflow.indexOf('mv "${RUNNER_TEMP}/SHA256SUMS" dist/SHA256SUMS');
+  const checksumIndex = workflow.indexOf(
+    'mv "${RUNNER_TEMP}/SHA256SUMS" dist/SHA256SUMS',
+  );
   assert.ok(copyIndex > 0);
   assert.ok(checksumIndex > copyIndex);
   assert.match(workflow, /require_count 'install\.sh' 1/);

@@ -8,13 +8,13 @@
 </picture>
 
 [![License](https://img.shields.io/github/license/TimurDudhaschGK/antiburn)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-informational)](docs/support.md)
+[![Platforms](https://img.shields.io/badge/releases-Windows%20%7C%20Linux-informational)](docs/runbooks/fork-release.md)
 [![Release](https://img.shields.io/github/v/release/TimurDudhaschGK/antiburn?filter=antiburn-v*)](https://github.com/TimurDudhaschGK/antiburn/releases/latest)
 [![CI](https://github.com/TimurDudhaschGK/antiburn/actions/workflows/ci.yml/badge.svg)](https://github.com/TimurDudhaschGK/antiburn/actions/workflows/ci.yml)
 [![GitHub stars](https://img.shields.io/github/stars/TimurDudhaschGK/antiburn)](https://github.com/TimurDudhaschGK/antiburn/stargazers)
-[![aislop score](https://badges.scanaislop.com/score/antiburn/antiburn.svg)](https://scanaislop.com/antiburn/antiburn)
 [![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white)](https://tauri.app/)
-[![Slack](https://img.shields.io/badge/Slack-join-4A154B?logo=slack&logoColor=white)](https://antiburn.com/slack)
+
+This is [TimurDudhaschGK’s fork](https://github.com/TimurDudhaschGK/antiburn/tree/fix/main) of [antiburn](https://github.com/antiburn/antiburn), maintained on `fix/main`. It includes native Windows ARM64 support and preserves Windows startup-disable choices.
 
 A little free desktop app to check your sessions for the most common causes of token burn - sessions that go too deep, subagents that go too hard, skills and MCPs that go unused, etc etc etc.
 
@@ -36,22 +36,23 @@ antiburn supports Claude Code, Codex, Cursor, GitHub Copilot, Cline, OpenCode, K
 
 This fork maintains its fixes on `fix/main`. Installers and application updates
 use this fork's releases. See [fork release setup](docs/runbooks/fork-release.md)
-for the signing and CI requirements before publishing a package.
+for the signing and CI requirements. macOS packages are not published by this fork.
 
-macOS or Linux:
+Linux (x64 and ARM64):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/TimurDudhaschGK/antiburn/fix/main/install.sh | sh
+curl -fsSL https://github.com/TimurDudhaschGK/antiburn/releases/latest/download/install.sh | sh
 ```
 
 Windows 11 PowerShell (x64 and ARM64):
 
 ```powershell
-irm https://raw.githubusercontent.com/TimurDudhaschGK/antiburn/fix/main/install.ps1 | iex
+irm https://github.com/TimurDudhaschGK/antiburn/releases/latest/download/install.ps1 | iex
 ```
 
-The installers verify release checksums. macOS also verifies the application
-signature with Gatekeeper. Manual packages are available from the
+Inspect the scripts before running them: [PowerShell installer](https://github.com/TimurDudhaschGK/antiburn/blob/fix/main/install.ps1) · [Linux installer](https://github.com/TimurDudhaschGK/antiburn/blob/fix/main/install.sh).
+
+The installers verify release checksums. Windows installers do not have an Authenticode signature, so SmartScreen can warn. Application updates use this fork’s own signing key. Manual packages are available from the
 [latest release](https://github.com/TimurDudhaschGK/antiburn/releases/latest).
 
 ## Development

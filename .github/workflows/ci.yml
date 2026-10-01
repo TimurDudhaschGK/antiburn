@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "fix/main"]
+    branches: ["fix/main"]
   pull_request:
 
 permissions:
@@ -102,7 +102,7 @@ jobs:
           shared-key: engine-ci
           key: ${{ matrix.name }}
           cache-bin: false
-          save-if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          save-if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/fix/main' }}
 
       - name: Install nextest
         uses: taiki-e/install-action@b20dedce73af6905cdc30d6611090c9b67557c8d # v2
@@ -302,7 +302,7 @@ jobs:
           shared-key: desktop-backend-ci
           key: ${{ matrix.platform.name }}-${{ matrix.workspace.name }}
           cache-bin: false
-          save-if: ${{ matrix.check.save_cache && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          save-if: ${{ matrix.check.save_cache && github.event_name == 'push' && github.ref == 'refs/heads/fix/main' }}
 
       - name: Run ${{ matrix.check.name }}
         working-directory: ${{ matrix.workspace.directory }}
@@ -496,17 +496,11 @@ jobs:
   warm-release-cache:
     name: warm release cache (${{ matrix.name }})
     needs: classify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.classify.outputs.release_app == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/fix/main' && needs.classify.outputs.release_app == 'true'
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: macOS ARM64
-            os: macos-latest
-            target: aarch64-apple-darwin
-          - name: macOS x64
-            os: macos-latest
-            target: x86_64-apple-darwin
           - name: Windows x64
             os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -709,15 +703,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Verify Antigravity release credentials
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_ID }}
-          GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_SECRET }}
-        run: |
-          test -n "$GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_ID"
-          test -n "$GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_SECRET"
 
       - name: Scan the tree for secrets
         run: pnpm run secrets

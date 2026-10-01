@@ -190,7 +190,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # `--target all` covers every platform's conditional dependencies, so one
-      # inventory describes all six release targets rather than the host's.
+      # inventory describes all four release targets rather than the host's.
       # The engine appears in here as a component: it is a path dependency of
       # the shell, which is what actually ships.
       - name: Inventory the Rust dependency tree
@@ -254,20 +254,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: macOS ARM64
-            os: macos-latest
-            target: aarch64-apple-darwin
-            bundles: app,dmg
-            artifact: macos-arm64
-            arch_label: aarch64
-            updater_platform: darwin-aarch64
-          - name: macOS x64
-            os: macos-latest
-            target: x86_64-apple-darwin
-            bundles: app,dmg
-            artifact: macos-x64
-            arch_label: x64
-            updater_platform: darwin-x86_64
           - name: Windows x64
             os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -668,10 +654,13 @@ jobs:
             echo "ANTIBURN_ANALYTICS_URL and ANTIBURN_ANALYTICS_OPERATOR must be configured together." >&2
             exit 1
           fi
-          if [[ -z "${GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_ID:-}" ]] || \
-             [[ -z "${GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_SECRET:-}" ]]; then
-            echo "The Antigravity 2.0 OAuth client credentials are required for a release." >&2
+          if { [[ -n "${GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_ID:-}" ]] && [[ -z "${GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_SECRET:-}" ]]; } || \
+             { [[ -z "${GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_ID:-}" ]] && [[ -n "${GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_SECRET:-}" ]]; }; then
+            echo "Configure both Antigravity OAuth client inputs together." >&2
             exit 1
+          fi
+          if [[ -z "${GOOGLE_ANTIGRAVITY_2_IDE_AGY_OAUTH_CLIENT_ID:-}" ]]; then
+            echo "::notice::Antigravity 2.0 credential refresh is not configured in this fork. Local session analysis remains available."
           fi
           if [[ -n "${TAURI_SIGNING_CONFIG:-}" ]]; then
             pnpm --filter @antiburn/desktop exec tauri build \
@@ -910,19 +899,19 @@ jobs:
           cp install.sh install.ps1 dist/
 
           mapfile -t manifests < <(find incoming -type f -name 'updater-*.json' | sort)
-          if [[ "${#manifests[@]}" -ne 6 ]]; then
-            echo "::error::Expected 6 updater manifest fragments, found ${#manifests[@]}. A release ships every target or none."
+          if [[ "${#manifests[@]}" -ne 4 ]]; then
+            echo "::error::Expected 4 updater manifest fragments, found ${#manifests[@]}. A release ships every target or none."
             exit 1
           fi
 
           mapfile -t evidence < <(find incoming -type f -name 'evidence-*.json' | sort)
-          if [[ "${#evidence[@]}" -ne 6 ]]; then
-            echo "::error::Expected 6 build-evidence records, found ${#evidence[@]}."
+          if [[ "${#evidence[@]}" -ne 4 ]]; then
+            echo "::error::Expected 4 build-evidence records, found ${#evidence[@]}."
             exit 1
           fi
           jq -e -s '
             (map(.platform) | sort) ==
-              ["darwin-aarch64", "darwin-x86_64", "linux-aarch64-appimage", "linux-x86_64-appimage", "windows-aarch64", "windows-x86_64"] and
+              ["linux-aarch64-appimage", "linux-x86_64-appimage", "windows-aarch64", "windows-x86_64"] and
             all(.[]; (.signing | length) > 0 and (.files | length) >= 2)
           ' "${evidence[@]}" > /dev/null
           require_count() {
@@ -933,14 +922,14 @@ jobs:
               exit 1
             fi
           }
-          require_count '*.dmg' 2
+          require_count '*.dmg' 0
           require_count '*.exe' 2
           require_count "antiburn_${VERSION}_x64-setup.exe" 1
           require_count "antiburn_${VERSION}_arm64-setup.exe" 1
           require_count '*.AppImage' 2
           require_count '*.deb' 2
-          require_count '*.app.tar.gz' 2
-          require_count '*.sig' 6
+          require_count '*.app.tar.gz' 0
+          require_count '*.sig' 4
           require_count '*.cdx.json' 2
           require_count 'install.sh' 1
           require_count 'install.ps1' 1
@@ -958,7 +947,7 @@ jobs:
 
           jq -e '
             (.platforms | keys | sort) ==
-              ["darwin-aarch64", "darwin-x86_64", "linux-aarch64-appimage", "linux-x86_64-appimage", "windows-aarch64", "windows-x86_64"]
+              ["linux-aarch64-appimage", "linux-x86_64-appimage", "windows-aarch64", "windows-x86_64"]
           ' dist/latest.json > /dev/null
 
           # Every URL the manifest advertises must be immutable, point at this
@@ -1042,7 +1031,7 @@ jobs:
           PRERELEASE: ${{ needs.verify.outputs.prerelease }}
         run: |
           set -euo pipefail
-          title="antiburn ${VERSION}"
+          title="antiburn ${VERSION} — TimurDudhaschGK fork"
           if state=$(gh release view "$TAG" --json isDraft --jq '.isDraft' 2>/dev/null); then
             if [[ "$state" != "true" ]]; then
               echo "::error::${TAG} is already published. Published assets are immutable — cut a corrective release instead. See docs/runbooks/rollback.md."
@@ -1079,7 +1068,7 @@ jobs:
             echo
             echo "### Automated evidence"
             echo
-            echo "The workflow verified the exact maintained-branch CI SHA, six updater platforms, immutable URLs, detached signatures, asset presence, checksums, and the signing mode reported by every build."
+            echo "The workflow verified the exact maintained-branch CI SHA, four updater platforms, immutable URLs, detached signatures, asset presence, checksums, and the signing mode reported by every build."
             echo
             echo "| Platform | Target | Signing mode |"
             echo "| --- | --- | --- |"
@@ -1101,7 +1090,7 @@ jobs:
             echo "### Manual acceptance"
             echo
             echo "- Install and launch on every reachable platform."
-            echo "- Run install.sh on macOS and Linux, and install.ps1 on Windows."
+            echo "- Run install.sh on Linux, and install.ps1 on Windows."
             echo "- Confirm Gatekeeper or SmartScreen behavior matches the signing mode above."
             echo "- Confirm a previous version can discover this update."
             echo "- Read the release notes and confirm the Latest/prerelease setting before publishing."

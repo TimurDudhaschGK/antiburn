@@ -17,11 +17,19 @@ One asymmetric key pair, generated once:
 An installed copy of antiburn will install an update **only** if the download's
 detached signature verifies against the public half its own binary carries. That
 sentence is the whole security model of the update channel, and it has a
-consequence people usually meet the hard way: *the public key inside an
-installed build cannot be changed by an update*. A build only trusts what it
+consequence people usually meet the hard way: _the public key inside an
+installed build cannot be changed by an update_. A build only trusts what it
 already trusts.
 
 ## Current state
+
+This fork generated its own password-protected updater key on 1 October 2026.
+Its public half is committed in `tauri.conf.json`; its private half and password
+are in this fork's `release` environment. A Windows-user-restricted local backup
+is stored outside the repository, with the password encrypted for that Windows
+user. Transfer that backup to offline custody or the maintainer's password
+manager. The upstream key described below is historical context and does not
+sign this fork's releases.
 
 The key pair **was minted 2026-08-14.** The public half is committed as
 `plugins.updater.pubkey`; the private half and its passphrase live in the
@@ -111,8 +119,8 @@ Procedure:
 5. **Say so, loudly and in the places people will actually look:** the release
    notes, the repository README, and a pinned security advisory if the rotation
    was caused by a compromise. The message a reader needs is short and specific:
-   *automatic updates cannot carry you across this change; download and install
-   the new version by hand, once.*
+   _automatic updates cannot carry you across this change; download and install
+   the new version by hand, once._
 6. Destroy the old private key only after the advisory is out and the release is
    published — until then it is evidence, and it is also the only thing that can
    sign a last update for the old population if that turns out to be possible.
@@ -129,7 +137,7 @@ first, and no account to re-authenticate — antiburn has none.
 Both custody copies are gone; nobody else has it either. This is a rotation with
 one difference: there is no urgency and no advisory, so you can schedule it with
 a release people were going to install anyway. Announce it in the release notes
-of the *preceding* version if you can — a reader who is told in advance that the
+of the _preceding_ version if you can — a reader who is told in advance that the
 next update must be installed by hand will do it.
 
 ## What is never done

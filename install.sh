@@ -853,8 +853,11 @@ install_antiburn() {
   TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/antiburn-install.XXXXXX") \
     || fail "Could not create a temporary directory."
 
-  resolve_release "$VERSION_REQUESTED"
   os=$(uname -s)
+  if [ "$os" = "Darwin" ]; then
+    fail "This fork publishes Windows and Linux packages. macOS packages are not available."
+  fi
+  resolve_release "$VERSION_REQUESTED"
   arch=$(uname -m)
   case "${os}/${arch}" in
     Darwin/arm64) build_target="your Mac (Apple Silicon)" ;;
